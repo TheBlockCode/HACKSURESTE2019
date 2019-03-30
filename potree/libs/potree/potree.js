@@ -24152,7 +24152,6 @@ Potree.NavigationCube = class NavigationCube extends THREE.Object3D {
 		this.camera.rotation.order = "ZXY";
 
 		let onMouseDown = (event) => {
-			console.log("LOL");
 			this.pickedFace = null;
 			let mouse = new THREE.Vector2();
 			mouse.x = event.clientX - (window.innerWidth - this.width);

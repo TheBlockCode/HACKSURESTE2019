@@ -121,6 +121,16 @@
 				cameraPosition: [-19.943, -26.383, 1.113],
 				cameraTarget: [-22.519, -24.898, 0.016]
 			});
+
+			/*
+			let hallazgo2 = new Potree.Annotation({ 
+				position: [-11.95, -25.65, 0.77], 
+				title: "Test", 
+				description: 'ajsdbakjdba',
+				cameraPosition: [30, 30, 0],
+				cameraTarget: [10, 10, 10]
+			});
+			*/
 			
 			//agregar la anotacion
 			sceneSG.annotations.add(hallazgo1);
@@ -133,13 +143,23 @@
 			viewer.fitToScreen();
 		});
 		
-		// Bucle de renderizado
-		var animate = function () {
-				requestAnimationFrame( animate );
-				
+		function getMousePosition()
+		{
+
+		}
+
+		function addAnotation(annotation)
+		{
+			
+		}
+
+		var gameLoop = function () {
+				requestAnimationFrame( gameLoop );
+		
+				getMousePosition();
 		};
 
-		animate();
+		gameLoop();
 
 	</script>
 	
