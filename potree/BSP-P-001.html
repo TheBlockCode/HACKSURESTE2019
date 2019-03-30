@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="description" content="">
+	<meta name="author" content="">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+	<title>Potree Viewer</title>
+
+	<link rel="stylesheet" type="text/css" href="libs/potree/potree.css">
+	<link rel="stylesheet" type="text/css" href="libs/jquery-ui/jquery-ui.min.css">
+	<link rel="stylesheet" type="text/css" href="libs/perfect-scrollbar/css/perfect-scrollbar.css">
+	<link rel="stylesheet" type="text/css" href="libs/openlayers3/ol.css">
+	<link rel="stylesheet" type="text/css" href="libs/spectrum/spectrum.css">
+	<link rel="stylesheet" type="text/css" href="libs/jstree/themes/mixed/style.css">
+</head>
+
+<body>
+	<script src="libs/jquery/jquery-3.1.1.min.js"></script>
+	<script src="libs/spectrum/spectrum.js"></script>
+	<script src="libs/perfect-scrollbar/js/perfect-scrollbar.jquery.js"></script>
+	<script src="libs/jquery-ui/jquery-ui.min.js"></script>
+	<script src="libs/three.js/build/three.min.js"></script>
+	<script src="libs/other/BinaryHeap.js"></script>
+	<script src="libs/tween/tween.min.js"></script>
+	<script src="libs/d3/d3.js"></script>
+	<script src="libs/proj4/proj4.js"></script>
+	<script src="libs/openlayers3/ol.js"></script>
+	<script src="libs/i18next/i18next.js"></script>
+	<script src="libs/jstree/jstree.js"></script>
+	<script src="libs/potree/potree.js"></script>
+	<script src="libs/plasio/js/laslaz.js"></script>
+	
+	<!-- INCLUDE ADDITIONAL DEPENDENCIES HERE -->
+		document.title = "";
+		viewer.setEDLEnabled(true);
+		viewer.setBackground("gradient"); // ["skybox", "gradient", "black", "white"];
+		viewer.setDescription(``);
+	
+	<div class="potree_container" style="position: absolute; width: 100%; height: 100%; left: 0px; top: 0px; ">
+		<div id="potree_render_area"></div>
+		<div id="potree_sidebar_container"> </div>
+	</div>
+	
+	<script type="x-shader/x-fragment" id="fs_interpolation">
+
+    varying vec3 vColor;
+
+    #extension GL_EXT_frag_depth : enable
+
+    void main() {
+
+        // make circular
+        float a = pow(2.0*(gl_PointCoord.x - 0.5), 2.0);
+        float b = pow(2.0*(gl_PointCoord.y - 0.5), 2.0);
+        float c = 1.0 - (a + b);
+
+        if(c < 0.0){
+            discard;
+        }
+
+
+        gl_FragColor = vec4(vColor, 1.0);
+        gl_FragDepthEXT = gl_FragCoord.z + 0.01*(1.0-pow(c, 2.0));
+    }
+
+	</script>
+	
+	<script>
+	
+		window.viewer = new Potree.Viewer(document.getElementById("potree_render_area"));
+		viewer.setEDLEnabled(true); // Activate Eye dome lightnin
+		viewer.setEDLRadius(1.4); // Set EDL Radius
+		viewer.setEDLStrength(0.4); // Set EDL Strength
+		viewer.setMinNodeSize(0); // Size of Octree cells (a really view quality major parameter)
+		//viewer.setSplatQuality(High Quaity);
+		
+		//viewer.setEDLEnabled(true);
+		viewer.setFOV(60);
+		viewer.setPointBudget(1*1000*1000);
+		document.title = "BSP-P-001";
+		viewer.setEDLEnabled(true);
+		viewer.setBackground("gradient"); // ["skybox", "gradient", "black", "white"];
+		//viewer.setSplatQuality("high quality");
+		viewer.setDescription(``);
+		viewer.loadSettingsFromURL();
+		
+		viewer.loadGUI(() => {
+			viewer.setLanguage('en');
+			//$("#menu_appearance").next().show();
+			//$("#menu_tools").next().show();
+			//$("#menu_scene").next().show();			
+			//viewer.toggleSidebar();
+						
+			
+		});
+		
+		viewer.setDescription(`
+		CIRCUITO DE 8"Ø DE SEPARADOR TRIFÁSICO TL-02 HACIA VÁLVULA LCV-202
+		`);
+		
+		Potree.loadPointCloud("pointclouds/BSP-P-001/cloud.js", "BSP-P-001", e => {
+			let pointcloud = e.pointcloud;
+			let material = pointcloud.material;
+			
+			let scene = viewer.scene;
+			
+			//Permite agregar elementos al escenario
+			let sceneSG = new Potree.Scene();			
+			viewer.setScene(sceneSG);
+			//let pointcloud = e.pointcloud;
+			
+			
+			//Anotaciones
+			let hallazgo1 = new Potree.Annotation({
+				position: [-21.95, -25.65, 0.77],
+				title: "HIM",
+				description: `1. DISCONTINUIDAD TIPO: QUEMADURA POR ARCO ELÉCTRICO. LA DISCONTINUIDAD No 31 DEL ELEMENTO No3, CON UNA PROFUNDIDAD DE 0.078 PULGADAS REPRESENTA LA PÉRDIDA MÁXIMA CON UN PORCENTAJE DEL 23.7%.
+							<br>
+							2. TRES DISCONTINUIDADES TIPO PERDIDA DE METAL INTERNA LOCALIZADA, LA DISCONTINUIDAD No 6.1 DEL ELEMENTO No. 6, CON UNA PROFUNDIDAD DE 0.088 PULGADAS REPRESENTA LA PÉRDIDA MÁXIMA CON UN PORCENTAJE DEL 29.63%.`,
+				cameraPosition: [-19.943, -26.383, 1.113],
+				cameraTarget: [-22.519, -24.898, 0.016]
+			});
+			
+			//agregar la anotacion
+			sceneSG.annotations.add(hallazgo1);
+			
+			viewer.scene.addPointCloud(pointcloud);
+			material.pointColorType = Potree.PointColorType.RGB; // any Potree.PointColorType.XXXX 
+			material.size = 1;
+			material.pointSizeType = Potree.PointSizeType.FIXED;
+			material.shape = Potree.PointShape.CIRCLE;
+			viewer.fitToScreen();
+		});
+		
+	</script>
+	
+	
+  </body>
+</html>
