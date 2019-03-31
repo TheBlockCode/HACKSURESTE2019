@@ -141,22 +141,32 @@
 			material.pointSizeType = Potree.PointSizeType.FIXED;
 			material.shape = Potree.PointShape.CIRCLE;
 			viewer.fitToScreen();
-		});
-		
-		function getMousePosition()
-		{
-			
-		}
 
-		function addAnotation(annotation)
-		{
-			
-		}
+			function addAnotation()
+			{
+				let hallazgo2 = new Potree.Annotation({
+					position: [-10.95, -10.65, 0.77],
+					title: "TEST",
+					description: `1. DISCONTINUIDAD TIPO: QUEMADURA POR ARCO ELÉCTRICO. LA DISCONTINUIDAD No 31 DEL ELEMENTO No3, CON UNA PROFUNDIDAD DE 0.078 PULGADAS REPRESENTA LA PÉRDIDA MÁXIMA CON UN PORCENTAJE DEL 23.7%.
+								<br>
+								2. TRES DISCONTINUIDADES TIPO PERDIDA DE METAL INTERNA LOCALIZADA, LA DISCONTINUIDAD No 6.1 DEL ELEMENTO No. 6, CON UNA PROFUNDIDAD DE 0.088 PULGADAS REPRESENTA LA PÉRDIDA MÁXIMA CON UN PORCENTAJE DEL 29.63%.`,
+					cameraPosition: [-19.943, -26.383, 1.113],
+					cameraTarget: [-22.519, -24.898, 0.016]
+				});
+
+				sceneSG.annotations.add(hallazgo2);
+			}
+
+
+			$(function(){
+				$('#btnTest').click(function() {
+					addAnotation();
+				});
+			});
+		});
 
 		var gameLoop = function () {
 				requestAnimationFrame( gameLoop );
-		
-				getMousePosition();
 		};
 
 		gameLoop();
