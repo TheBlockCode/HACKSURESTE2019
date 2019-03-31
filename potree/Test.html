@@ -195,6 +195,113 @@ window.viewer = new Potree.Viewer(document.getElementById("potree_render_area"))
 
                 animate();
 
+                let addAnnotationBtn = new function()
+                {
+                    
+                }
+                
+                addAnnotationBtn.addEventListener('click', _ => {
+                let dummyMeasure = measuringTool.startInsertion({
+                    showDistances: false,
+                    showAngles: false,
+                    showCoordinates: true,
+                    showArea: false,
+                    closed: true,
+                    maxMarkers: 1,
+                    name: 'Point'
+                });
+
+                const stopDragging = e => {
+                    if (e.key === "Escape") {
+                        window.viewer.inputHandler.drag = null;
+                        dummyMeasure.removeMarker(dummyMeasure.points.length - 1);
+                        window.viewer.scene.removeMeasurement(dummyMeasure);
+                        document.removeEventListener('keyup', stopDragging);
+                    }
+                }
+
+                document.addEventListener('keyup', stopDragging)
+
+                dummyMeasure.addEventListener('marker_dropped', (markerDroppedEvent) => 
+                {
+                    document.removeEventListener('keyup', stopDragging);
+                    annotationForm.style.visibility = 'visible'
+                    
+                    const annotationFormButton = document.getElementById('annotationFormSubmit');
+                    const annotationTitle = document.getElementById('annotationTitle');
+                    const annotationDescription = document.getElementById('annotationDescription');
+                    const hideAnnotationModal = document.getElementById('hideAnnotationModal');
+                    const annotationForm = annotationTitle.parentNode.parentNode;
+                    annotationForm.style.display = 'flex';
+                    annotationForm.style.flexDirection = 'column';
+                    annotationForm.style.margin = '50px'
+                    annotationTitle.value = '';
+                    annotationDescription.value = '';
+                    const modal = annotationForm.parentNode;
+                    
+                    modal.style.height = 'auto';
+                    
+                    const stopInsertion = e => {
+                        if (e.key === "Escape" || e.type === 'click') {
+                            window.viewer.scene.removeMeasurement(dummyMeasure);
+                            annotationForm.style.visibility = 'hidden'
+                            document.removeEventListener('keyup', stopInsertion);
+                            hideAnnotationModal.removeEventListener('click', stopInsertion);
+                        }
+                    }
+                    
+                    hideAnnotationModal.addEventListener('click', stopInsertion);
+                    document.addEventListener('keyup', stopInsertion)
+                    
+                    function handleFormSubmit () {
+                        if (!annotationTitle.value) {
+                            return;
+                        }
+                    
+                        window.viewer.scene.addAnnotation(
+                            markerDroppedEvent.measurement.points[0].position, 
+                            {
+                                title: annotationTitle.value,
+                                description: annotationDescription.value || null,
+                                cameraPosition: [window.viewer.scene.view.position.x, window.viewer.scene.view.position.y, window.viewer.scene.view.position.z],
+                                cameraTarget: [window.viewer.scene.view.getPivot().x, window.viewer.scene.view.getPivot().y, window.viewer.scene.view.getPivot().z]
+                            }    
+                        );
+
+                        let annotationInfo = {
+                            type: '3dannotation',
+                            title: annotationTitle.value,
+                            data: JSON.stringify({
+                                position: [markerDroppedEvent.measurement.points[0].position.x, markerDroppedEvent.measurement.points[0].position.y, markerDroppedEvent.measurement.points[0].position.z],
+                                title: annotationTitle.value,
+                                description: annotationDescription.value || null,
+                                cameraPosition: [window.viewer.scene.view.position.x, window.viewer.scene.view.position.y, window.viewer.scene.view.position.z],
+                                cameraTarget: [window.viewer.scene.view.getPivot().x, window.viewer.scene.view.getPivot().y, window.viewer.scene.view.getPivot().z]
+                            })
+                        };
+
+                        fetch(annotationInfo) // You can send the annotation info to some api if you'd like
+                        .then(annotationResponse => {
+                            if (!annotationResponse.status) {
+                                return Promise.reject(annotationResponse.content);
+                            }
+                            const annotationCount = window.viewer.scene.annotations.children.length;
+                            window.viewer.scene.annotations.children[annotationCount - 1].id = annotationResponse.content;
+                        })
+                        .catch(reason => {
+                            // handle the fetch error
+                        });
+
+                        window.viewer.scene.removeMeasurement(dummyMeasure)
+                        annotationFormButton.removeEventListener('click', handleFormSubmit);
+                        annotationForm.style.visibility = 'hidden'
+                        document.removeEventListener('keyup', stopInsertion);
+                    };
+
+                    annotationFormButton.addEventListener('click', handleFormSubmit);
+                });
+            });
+
                 
             </script>
 	</body>

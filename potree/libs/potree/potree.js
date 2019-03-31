@@ -12250,7 +12250,7 @@ Potree.Measure = class Measure extends THREE.Object3D {
 		this.spheres = [];
 		this.edges = [];
 		this.sphereLabels = [];
-		this.edgeLabels = []; 
+		this.edgeLabels = [];
 		this.angleLabels = [];
 		this.coordinateLabels = [];
 
@@ -12308,7 +12308,8 @@ Potree.Measure = class Measure extends THREE.Object3D {
 		return sphereMaterial;
 	};
 
-	addMarker (point) {
+	addAnnotation (point) {
+
 		if (point instanceof THREE.Vector3) {
 			point = {position: point};
 		}else if(point instanceof Array){
@@ -12393,6 +12394,121 @@ Potree.Measure = class Measure extends THREE.Object3D {
 
 			let drop = e => {
 				let i = this.spheres.indexOf(e.drag.object);
+				if (i !== -1) {
+					this.dispatchEvent({
+						'type': 'marker_dropped',
+						'measurement': this,
+						'index': i
+					});
+				}
+			};
+
+			let mouseover = (e) => e.object.material.emissive.setHex(0x888888);
+			let mouseleave = (e) => e.object.material.emissive.setHex(0x000000);
+
+			sphere.addEventListener('drag', drag);
+			sphere.addEventListener('drop', drop);
+			sphere.addEventListener('mouseover', mouseover);
+			sphere.addEventListener('mouseleave', mouseleave);
+		}
+
+		let event = {
+			type: 'marker_added',
+			measurement: this,
+			sphere: sphere
+		};
+		this.dispatchEvent(event);
+
+		this.setMarker(this.points.length - 1, point);
+	};
+
+	addMarker (point) {
+
+		if (point instanceof THREE.Vector3) {
+			point = {position: point};
+		}else if(point instanceof Array){
+			point = {position: new THREE.Vector3(...point)};
+		}
+		this.points.push(point);
+
+		// sphere
+		let sphere = new THREE.Mesh(this.sphereGeometry, this.createSphereMaterial());
+
+		this.add(sphere);
+		this.spheres.push(sphere);
+
+		{ // edges
+			let lineGeometry = new THREE.Geometry();
+			lineGeometry.vertices.push(new THREE.Vector3(), new THREE.Vector3());
+			lineGeometry.colors.push(this.color, this.color, this.color);
+			let lineMaterial = new THREE.LineBasicMaterial({
+				linewidth: 1
+			});
+			lineMaterial.depthTest = false;
+			let edge = new THREE.Line(lineGeometry, lineMaterial);
+			edge.visible = true;
+
+			this.add(edge);
+			this.edges.push(edge);
+		}
+
+		{ // edge labels
+			let edgeLabel = new Potree.TextSprite();
+			edgeLabel.setBorderColor({r: 0, g: 0, b: 0, a: 0.8});
+			edgeLabel.setBackgroundColor({r: 0, g: 0, b: 0, a: 0.3});
+			edgeLabel.material.depthTest = false;
+			edgeLabel.visible = false;
+			this.edgeLabels.push(edgeLabel);
+			this.add(edgeLabel);
+		}
+
+		{ // angle labels
+			let angleLabel = new Potree.TextSprite();
+			angleLabel.setBorderColor({r: 0, g: 0, b: 0, a: 0.8});
+			angleLabel.setBackgroundColor({r: 0, g: 0, b: 0, a: 0.3});
+			angleLabel.material.depthTest = false;
+			angleLabel.material.opacity = 1;
+			angleLabel.visible = false;
+			this.angleLabels.push(angleLabel);
+			this.add(angleLabel);
+		}
+
+		{ // coordinate labels
+			let coordinateLabel = new Potree.TextSprite();
+			coordinateLabel.setBorderColor({r: 0, g: 0, b: 0, a: 0.8});
+			coordinateLabel.setBackgroundColor({r: 0, g: 0, b: 0, a: 0.3});
+			coordinateLabel.material.depthTest = false;
+			coordinateLabel.material.opacity = 1;
+			coordinateLabel.visible = false;
+			this.coordinateLabels.push(coordinateLabel);
+			this.add(coordinateLabel);
+		}
+
+		{ // Event Listeners
+			let drag = (e) => {
+				let I = Potree.utils.getMousePointCloudIntersection(
+					e.drag.end, 
+					e.viewer.scene.getActiveCamera(), 
+					e.viewer, 
+					e.viewer.scene.pointclouds,
+					{pickClipped: true});
+
+				if (I) {
+					let i = this.spheres.indexOf(e.drag.object);
+					if (i !== -1) {
+						let point = this.points[i];
+						for (let key of Object.keys(I.point).filter(e => e !== 'position')) {
+							point[key] = I.point[key];
+						}
+
+						this.setPosition(i, I.location);
+					}
+				}
+			};
+
+			let drop = e => {
+				let i = this.spheres.indexOf(e.drag.object);
+				console.log("DROP");
 				if (i !== -1) {
 					this.dispatchEvent({
 						'type': 'marker_dropped',
@@ -12785,6 +12901,80 @@ Potree.MeasuringTool = class MeasuringTool extends THREE.EventDispatcher {
 
 		e.scene.addEventListener('measurement_added', this.onAdd);
 		e.scene.addEventListener('measurement_removed', this.onRemove);
+	}
+
+	startAnnotation (args = {}) {
+
+		let domElement = this.viewer.renderer.domElement;
+
+		let annotation = new Potree.Annotation({
+			position: [-10.95, -10.65, 0.77],
+			title: "TEST",
+			description: `1. DISCONTINUIDAD TIPO: QUEMADURA POR ARCO ELÉCTRICO. LA DISCONTINUIDAD No 31 DEL ELEMENTO No3, CON UNA PROFUNDIDAD DE 0.078 PULGADAS REPRESENTA LA PÉRDIDA MÁXIMA CON UN PORCENTAJE DEL 23.7%.
+						<br>
+						2. TRES DISCONTINUIDADES TIPO PERDIDA DE METAL INTERNA LOCALIZADA, LA DISCONTINUIDAD No 6.1 DEL ELEMENTO No. 6, CON UNA PROFUNDIDAD DE 0.088 PULGADAS REPRESENTA LA PÉRDIDA MÁXIMA CON UN PORCENTAJE DEL 29.63%.`,
+			cameraPosition: [-19.943, -26.383, 1.113],
+			cameraTarget: [-22.519, -24.898, 0.016]
+		});
+
+		let measure = new Potree.Measure();
+
+		this.dispatchEvent({
+			type: 'start_inserting_measurement',
+			measure: measure
+		});
+
+		measure.showDistances = (args.showDistances === null) ? true : args.showDistances;
+		measure.showArea = args.showArea || false;
+		measure.showAngles = args.showAngles || false;
+		measure.showCoordinates = args.showCoordinates || false;
+		measure.showHeight = args.showHeight || false;
+		measure.closed = args.closed || false;
+		measure.maxMarkers = args.maxMarkers || Infinity;
+		measure.name = args.name || 'Measurement';
+
+		this.scene.add(measure);
+
+		let cancel = {
+			removeLastMarker: measure.maxMarkers > 3,
+			callback: null
+		};
+
+		let insertionCallback = (e) => {
+			if (e.button === THREE.MOUSE.LEFT) {
+				measure.addMarker(measure.points[measure.points.length - 1].position.clone());
+
+				if (measure.points.length >= measure.maxMarkers) {
+					cancel.callback();
+				}
+
+				this.viewer.inputHandler.startDragging(
+					measure.spheres[measure.spheres.length - 1]);
+			} else if (e.button === THREE.MOUSE.RIGHT) {
+				cancel.callback();
+			}
+		};
+
+		cancel.callback = e => {
+			if (cancel.removeLastMarker) {
+				measure.removeMarker(measure.points.length - 1);
+			}
+			domElement.removeEventListener('mouseup', insertionCallback, true);
+			this.viewer.removeEventListener('cancel_insertions', cancel.callback);
+		};
+
+		if (measure.maxMarkers > 1) {
+			this.viewer.addEventListener('cancel_insertions', cancel.callback);
+			domElement.addEventListener('mouseup', insertionCallback, true);
+		}
+
+		measure.addMarker(new THREE.Vector3(0, 0, 0));
+		this.viewer.inputHandler.startDragging(
+			measure.spheres[measure.spheres.length - 1]);
+
+		this.viewer.scene.addMeasurement(measure);
+
+		return measure;
 	}
 
 	startInsertion (args = {}) {
