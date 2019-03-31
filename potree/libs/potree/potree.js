@@ -12250,7 +12250,7 @@ Potree.Measure = class Measure extends THREE.Object3D {
 		this.spheres = [];
 		this.edges = [];
 		this.sphereLabels = [];
-		this.edgeLabels = [];
+		this.edgeLabels = []; 
 		this.angleLabels = [];
 		this.coordinateLabels = [];
 
